@@ -58,6 +58,43 @@ void mmap_test()
     else
         printf("phy_addr: %#llx cache: %d\n", mem_info.u64PhyAddr, mem_info.bCached);
 
+    // mmap
+    HI_VOID* tmp = HI_MPI_SYS_Mmap(phy_addr, 1024*1024);
+    if(!tmp)
+        printf("HI_MPI_SYS_Mmap falied\n");
+    else
+        printf("tmp addr: %#x\n", tmp);
+
+    HI_VOID* tmp_cache = HI_MPI_SYS_Mmap(phy_addr_cache, 1024*1024);
+    if(!tmp)
+        printf("HI_MPI_SYS_Mmap cache mem falied\n");
+    else
+        printf("tmp cache addr: %#x\n", tmp_cache);
+
+    tmp = HI_MPI_SYS_MmapCache(phy_addr, 1024*1024);
+    if(!tmp)
+        printf("HI_MPI_SYS_MmapCache falied\n");
+    else
+        printf("tmp addr: %#x\n", tmp);
+    tmp_cache = HI_MPI_SYS_MmapCache(phy_addr_cache, 1024*1024);
+    if(!tmp)
+        printf("HI_MPI_SYS_MmapCache cache mem falied\n");
+    else
+        printf("tmp cache addr: %#x\n", tmp_cache);
+
+    // 测试1.HI_MPI_SYS_MflushCache和HI_MPI_SYS_MmzFlushCache的区别
+    ret = HI_MPI_SYS_MflushCache(phy_addr_cache, vir_addr_cache, 1024*1024);
+    if(ret != HI_SUCCESS)
+        printf("HI_MPI_SYS_MflushCache failed\n");
+    else
+        printf("HI_MPI_SYS_MflushCache success\n");
+
+    ret = HI_MPI_SYS_MmzFlushCache(phy_addr_cache, vir_addr_cache, 1024*1024);
+    if(ret != HI_SUCCESS)
+        printf("HI_MPI_SYS_MmzFlushCache failed\n");
+    else
+        printf("HI_MPI_SYS_MmzFlushCache success.\n");
+
     getchar();
 
     HI_MPI_SYS_MmzFree(phy_addr, NULL);

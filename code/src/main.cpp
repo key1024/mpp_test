@@ -1,10 +1,35 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 #include "hi_comm_sys.h"
 #include "mpi_sys.h"
 #include "hi_comm_vb.h"
 #include "mpi_vb.h"
 #include "hi_buffer.h"
+#include "hi_mipi.h"
+#include "hi_securec.h"
+
+#define MIPI_DEV_NODE       "/dev/hi_mipi"
+
+combo_dev_attr_t MIPI_4lane_CHN0_SENSOR_IMX335_12BIT_4M_NOWDR_ATTR =
+{
+    .devno = 0,
+    .input_mode = INPUT_MODE_MIPI,
+    .data_rate = MIPI_DATA_RATE_X1,
+    .img_rect = {0, 0, 2592, 1520},
+
+    {
+        .mipi_attr =
+        {
+            DATA_TYPE_RAW_12BIT,
+            HI_MIPI_WDR_MODE_NONE,
+            {0, 1, 2, 3}
+        }
+    }
+};
 
 // 时间戳相关
 void pts()
@@ -178,6 +203,7 @@ void vb_test()
 
     // tmp_addr和vir_addr指向同一块内存
     char str[] = "hello";
+    memset(tmp_addr, 0, blk_size);
     memcpy(tmp_addr, str, strlen(str));
     printf(">>>%s<<<\n", (char*)vir_addr);
     
@@ -205,6 +231,112 @@ void vb_test()
     }
 }
 
+// 可以参考《MIPI使用指南.pdf》
+int set_mipi()
+{
+    HI_S32 fd;
+    HI_S32 s32Ret;
+
+    fd = open(MIPI_DEV_NODE, O_RDWR);
+
+    if (fd < 0)
+    {
+        printf("open hi_mipi dev failed\n");
+        return -1;
+    }
+
+    lane_divide_mode_t enHsMode = LANE_DIVIDE_MODE_0;
+    s32Ret = ioctl(fd, HI_MIPI_SET_HS_MODE, &enHsMode);
+    if (HI_SUCCESS != s32Ret)
+    {
+        printf("HI_MIPI_SET_HS_MODE failed\n");
+        close(fd);
+        return -1;
+    }
+
+    combo_dev_t devno = 0;//在目前的环境下固定为0
+    s32Ret = ioctl(fd, HI_MIPI_ENABLE_MIPI_CLOCK, &devno);
+    if (HI_SUCCESS != s32Ret)
+    {
+        printf("MIPI_ENABLE_CLOCK %d failed\n", devno);
+        close(fd);
+        return -1;
+    }
+
+    s32Ret = ioctl(fd, HI_MIPI_RESET_MIPI, &devno);
+    if (HI_SUCCESS != s32Ret)
+    {
+        printf("RESET_MIPI %d failed\n", devno);
+        close(fd);
+        return -1;
+    }
+
+    sns_clk_source_t SnsDev = 0;
+    for (SnsDev = 0; SnsDev < SNS_MAX_CLK_SOURCE_NUM; SnsDev++)
+    {
+        s32Ret = ioctl(fd, HI_MIPI_ENABLE_SENSOR_CLOCK, &SnsDev);
+
+        if (HI_SUCCESS != s32Ret)
+        {
+            printf("HI_MIPI_ENABLE_SENSOR_CLOCK failed\n");
+            close(fd);
+            return -1;
+        }
+    }
+
+    sns_rst_source_t SnsDev = 0;
+    for (SnsDev = 0; SnsDev < SNS_MAX_RST_SOURCE_NUM; SnsDev++)
+    {
+        s32Ret = ioctl(fd, HI_MIPI_RESET_SENSOR, &SnsDev);
+
+        if (HI_SUCCESS != s32Ret)
+        {
+            printf("HI_MIPI_RESET_SENSOR failed\n");
+            close(fd);
+            return -1;
+        }
+    }
+
+    combo_dev_attr_t stcomboDevAttr;
+    hi_memcpy(&stcomboDevAttr, sizeof(combo_dev_attr_t), &MIPI_4lane_CHN0_SENSOR_IMX335_12BIT_4M_NOWDR_ATTR, sizeof(combo_dev_attr_t));
+    stcomboDevAttr.devno = 0;
+    s32Ret = ioctl(fd, HI_MIPI_SET_DEV_ATTR, &stcomboDevAttr);
+    if (HI_SUCCESS != s32Ret)
+    {
+        printf("MIPI_SET_DEV_ATTR failed\n");
+        close(fd);
+        return -1;
+    }
+
+    s32Ret = ioctl(fd, HI_MIPI_UNRESET_MIPI, &devno);
+    if (HI_SUCCESS != s32Ret)
+    {
+        printf("UNRESET_MIPI %d failed\n", devno);
+        close(fd);
+        return -1;
+    }
+
+    for (SnsDev = 0; SnsDev < SNS_MAX_RST_SOURCE_NUM; SnsDev++)
+    {
+        s32Ret = ioctl(fd, HI_MIPI_UNRESET_SENSOR, &SnsDev);
+
+        if (HI_SUCCESS != s32Ret)
+        {
+            printf("HI_MIPI_UNRESET_SENSOR failed\n");
+            close(fd);
+            return -1;
+        }
+    }
+
+    close(fd);
+    return 0;
+}
+
+void vi_test()
+{
+    set_mipi();
+}
+
 int main(void)
 {
     MPP_VERSION_S version;
@@ -215,7 +347,9 @@ int main(void)
 
     // mmap_test();
 
-    vb_test();
+    // vb_test();
+
+    vi_test();
 
     return 0;
 }

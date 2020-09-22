@@ -1,5 +1,5 @@
 ### 1.说明
-海思芯片的内存被划分为两个部分，一块供OS使用，另一块就是MMZ(Media Memory Zone,多媒体内存区域)，供业务程序使用。操作MMZ内存需要HI_MPI提供的接口。malloc不会申请到MMZ里的内存。
+海思芯片的物理内存被划分为两个部分，一块供OS使用，另一块就是MMZ(Media Memory Zone,多媒体内存区域)。操作MMZ内存需要HI_MPI提供的接口。malloc不会申请到MMZ里的内存。
 MMZ内存的使用情况可以通过`cat /proc/media-mem`命令查看
 ```
 ~ # cat /proc/media-mem 
@@ -12,9 +12,17 @@ MMZ内存的使用情况可以通过`cat /proc/media-mem`命令查看
 
 ---MMZ_USE_INFO:
  total size=65536KB(64MB),used=2200KB(2MB + 152KB),remain=63336KB(61MB + 872KB),zone_number=1,block_number=5
-
 ```
 从上图我们可以看出，系统只分配了一块MMZ，名字是'anonymous'，这块MMZ下面目前申请了五块内存。
+系统内存使用情况可以通过`free`命令查看
+```
+/ # free -m
+             total       used       free     shared    buffers     cached
+Mem:            57         18         38          0          0          7
+-/+ buffers/cache:         11         45
+Swap:            0          0          0
+```
+从上面能看出来，系统占有57M的内存，MMZ占有64M的内存。
 ### 2.示例代码
 ```c
     // 使用系统接口申请内存
@@ -74,5 +82,6 @@ phy_addr: 0x44326000 cache: 1
 
 ```
 可以看到media-mem里面有两块我们申请的内存。
+从上面也能看出来MMZ的起始地址是0x44000000，malloc申请的内存地址是0x1f2d058，可以说明系统内存和mmz内存是两块内存。
 ### 3.关于cache属性的说明
 对于频繁使用的内存，最好使用HI_MPI_SYS_MmzAlloc_Cached分配内存，这样可以提高 cpu 读写的效率，提升系统性能，如用户在使用 ive 算子时，就存在大量数据频繁读写，此时使用此接口来分配内存，就能很好的提高 cpu 的效率。当 cpu 访问此接口分配的内存时，会将内存中的数据放在 cache 中，而硬件设备 (如 ive)只能访问物理内存，不能访问 cache 的内容，对于这种 cpu 和硬件会共同操作的内存，需调用 HI_MPI_SYS_MmzFlushCache 做好**数据同步**。

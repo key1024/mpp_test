@@ -12,9 +12,10 @@ set(CMAKE_CXX_COMPILER "arm-himix100-linux-g++")
 include_directories(../include)
 include_directories(../include/hisi)
 include_directories(../src/common)
+include_directories(../src/hisi_common)
 
 # 设置链接库路径
-link_directories(../../bin)
+link_directories(../../../bin)
 # 链接库
 link_libraries(_hiae _hiawb _hiawb_natura _hidehaze _hidrc _hiir_auto _hildci)
 link_libraries(bcd dnvqe hi_cipher hive_AEC hive_AGC hive_ANR hive_common hive_EQ hive_HPF hive_record hive_RES)
@@ -23,11 +24,9 @@ link_libraries(sns_gc2053 sns_gc2053_forcar sns_imx307 sns_imx307_2l sns_imx327 
 link_libraries(pthread)
 
 #设置项目生成目录
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../../bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../../../bin)
 
-# 包含源文件
-aux_source_directory(./ DIR_SRCS)
-aux_source_directory(./common/ DIR_SRCS)
-
-# 生成项目
-add_executable(mpp_test ${DIR_SRCS})
+# API测试模块
+add_subdirectory(test)
+# mipi视频流接入模块
+add_subdirectory(PlayMipiCamera)

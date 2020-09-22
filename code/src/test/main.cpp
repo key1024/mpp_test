@@ -11,7 +11,6 @@
 #include "hi_buffer.h"
 #include "hi_mipi.h"
 #include "hi_securec.h"
-#include "play_mipi_camera.h"
 
 // 时间戳相关
 void pts()
@@ -226,16 +225,6 @@ int main(void)
     // vb_test();
 
     // vi_test();
-
-    PlayMipiCamera play_mipi_camera;
-    play_mipi_camera.Init();
-
-    while (getchar() != 'q')
-    {
-        sleep(1);
-    }
-
-    play_mipi_camera.UnInit();
 
     return 0;
 }

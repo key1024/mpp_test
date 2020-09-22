@@ -23,11 +23,13 @@ int PlayMipiCamera::Init()
     // 系统初始化
     VB_CONFIG_S stVbConf;
     memset(&stVbConf, 0, sizeof(VB_CONFIG_S));
-    //最大缓存池的个数
+    // 最大缓存池的个数
+    // 申请两个大小不同的缓存池，用来分别存储原始图像和压缩后的图像，达到节省内存的目的
+    // mpp底层可以根据需要自动申请最合适的内存池
     stVbConf.u32MaxPoolCnt = 2;
     stVbConf.astCommPool[0].u64BlkSize = COMMON_GetPicBufferSize(m_width, m_height, 
                                 PIXEL_FORMAT_YVU_SEMIPLANAR_420, DATA_BITWIDTH_8, COMPRESS_MODE_NONE,DEFAULT_ALIGN);
-    stVbConf.astCommPool[0].u32BlkCnt    = 3;
+    stVbConf.astCommPool[0].u32BlkCnt    = 4;
     stVbConf.astCommPool[1].u64BlkSize = COMMON_GetPicBufferSize(1920, 1080, 
                                 PIXEL_FORMAT_YVU_SEMIPLANAR_420, DATA_BITWIDTH_8, COMPRESS_MODE_NONE,DEFAULT_ALIGN);
     stVbConf.astCommPool[1].u32BlkCnt    = 5;
@@ -205,13 +207,12 @@ int PlayMipiCamera::initVi()
     m_vi_config.astViInfo[0].stSnsInfo.s32BusId = 0;
     m_vi_config.astViInfo[0].stSnsInfo.s32SnsId = 0;
     // dev
-    m_vi_config.astViInfo[0].stDevInfo.ViDev = m_vi_config.astViInfo[0].stSnsInfo.MipiDev;
+    m_vi_config.astViInfo[0].stDevInfo.ViDev = 0;
     m_vi_config.astViInfo[0].stDevInfo.enWDRMode = WDR_MODE_NONE;
     // pipe
-    // MipiDev、ViDev、pipe这三者的号可能是一一对应的
-    m_vi_config.astViInfo[0].stPipeInfo.aPipe[0] = m_vi_config.astViInfo[0].stDevInfo.ViDev;
-    m_vi_config.astViInfo[0].stPipeInfo.enMastPipeMode = VI_OFFLINE_VPSS_ONLINE;
+    m_vi_config.astViInfo[0].stPipeInfo.aPipe[0] = 0;
     m_vi_config.astViInfo[0].stPipeInfo.aPipe[1] = -1;
+    m_vi_config.astViInfo[0].stPipeInfo.enMastPipeMode = VI_OFFLINE_VPSS_ONLINE;
     m_vi_config.astViInfo[0].stPipeInfo.bMultiPipe = HI_FALSE;
     m_vi_config.astViInfo[0].stPipeInfo.bVcNumCfged = HI_FALSE;
     // channel
@@ -253,7 +254,7 @@ int PlayMipiCamera::initVpss()
     //设置vpss组属性,指接收数据时控制码率
     stVpssGrpAttr.enDynamicRange = DYNAMIC_RANGE_SDR8;
     stVpssGrpAttr.enPixelFormat  = PIXEL_FORMAT_YVU_SEMIPLANAR_420; //YVU420
-    stVpssGrpAttr.u32MaxW        = m_width;// 控制输出的图像大小为1920*1080
+    stVpssGrpAttr.u32MaxW        = m_width;
     stVpssGrpAttr.u32MaxH        = m_height;
     stVpssGrpAttr.stFrameRate.s32SrcFrameRate = -1;
     stVpssGrpAttr.stFrameRate.s32DstFrameRate = -1;

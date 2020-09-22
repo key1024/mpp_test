@@ -23,8 +23,11 @@ link_libraries(isp ive ivp md mpi securec tde upvqe VoiceEngine)
 link_libraries(sns_gc2053 sns_gc2053_forcar sns_imx307 sns_imx307_2l sns_imx327 sns_imx327_2l sns_imx335 sns_os05a sns_sc2231 sns_sc2235 sns_sc3235 sns_sc4236)
 link_libraries(pthread)
 
-#设置项目生成目录
+# 设置项目生成目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../../../bin)
+
+# 添加调试信息
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 
 # API测试模块
 add_subdirectory(test)
